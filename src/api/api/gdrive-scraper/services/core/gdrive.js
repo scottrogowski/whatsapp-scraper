@@ -1,20 +1,21 @@
 const { google } = require("googleapis");
-const record = require("./record.json");
+const { record } = require("./model-record");
 const auth = new google.auth.GoogleAuth({
   keyFile: "./whatsapp-scraper-668a815fc26f.json",
   scopes: ["https://www.googleapis.com/auth/drive"],
 });
 const Promise = require("bluebird");
 var writeFile = Promise.promisify(require("fs").writeFile);
+var mkdir = Promise.promisify(require("fs").mkdir);
 const { DateTime } = require("luxon");
 const fs = require("fs");
-
+const { getFiles, getJSON, writeToJsonFile } = require("./message-parser");
 const drive = google.drive({
   version: "v3",
   auth,
 });
 
-exports.getFolderByName = (folderName) => {
+exports.getFolderFromDriveByName = (folderName) => {
   return drive.files
     .list({
       pageSize: 10,
@@ -44,18 +45,21 @@ exports.getFoldersInThisFolder = (folder) => {
     .then((res) => {
       return res.data && res.data.files && res.data.files.length > 0
         ? res.data.files
-        : Promise.reject("Unexpected Result");
+        : Promise.reject(
+            `Unexpected Result while getting folder list from ${folder.name}`
+          );
     })
     .then((folders) => {
-      console.log(`Following folders within ${folder.name} were obtained :`);
-      folders.map((folder) => {
-        console.log(folder.name);
-      });
+      console.log(
+        `Following folders within ${folder.name} were obtained : ${folders
+          .map((folder) => folder.name)
+          .join(", ")}`
+      );
       return folders;
     });
 };
 
-exports.getFilesInThisFolder = (folder) => {
+const getFilesInThisFolder = (folder) => {
   return drive.files
     .list({
       pageSize: 10,
@@ -70,22 +74,27 @@ exports.getFilesInThisFolder = (folder) => {
     })
     .then((files) => {
       console.log(
-        `Following Files were found within the folder ${folder.name}`
+        `Found in ${folder.name} : ${files.map((file) => file.name).join(", ")}`
       );
-      files.map((file) => {
-        console.log(file.name);
-      });
       return { folder, files };
     });
 };
 
+exports.getFilesInTheseFolders = (folders) => {
+  return Promise.all(
+    folders.map((folder) => {
+      return getFilesInThisFolder(folder);
+    })
+  );
+};
+
 exports.modifyLastUpdatedTimeInRecord = (folders) => {
   folders.map((folder) => {
-    console.log("--- ", folder);
     if (!record[folder.id]) {
       record[folder.id] = {};
     }
     record[folder.id]["modifiedTime"] = folder.modifiedTime;
+    record[folder.id]["name"] = folder.name;
   });
 
   return writeFile("record.json", JSON.stringify(record))
@@ -97,7 +106,7 @@ exports.modifyLastUpdatedTimeInRecord = (folders) => {
     );
 };
 
-exports.hasFolderContentChangedSinceLastTime = (folder, lastModifiedTime) => {
+const hasFolderContentChangedSinceLastTime = (folder, lastModifiedTime) => {
   if (lastModifiedTime === undefined || lastModifiedTime === null) {
     return true;
   } else {
@@ -107,28 +116,47 @@ exports.hasFolderContentChangedSinceLastTime = (folder, lastModifiedTime) => {
   }
 };
 
-exports.writeFileFromDriveToDisk = (file, folder) => {
-  fs.mkdir(`./files/${folder.name}/`, { recursive: true }, (err) => {
-    if (err) throw err;
+exports.getModifiedFoldersSinceLastScrapeTime = (whatsappGroupFolders) => {
+  return whatsappGroupFolders.filter((whatsappGroupFolder) => {
+    const lastModifiedTimeOfThisFolderInRecord = record[whatsappGroupFolder.id]
+      ? record[whatsappGroupFolder.id]["modifiedTime"]
+      : null;
+    return hasFolderContentChangedSinceLastTime(
+      whatsappGroupFolder,
+      lastModifiedTimeOfThisFolderInRecord
+    );
   });
+};
 
-  drive.files
-    .get({ fileId: file.id, alt: "media" }, { responseType: "stream" })
-    .then((res) => {
-      return new Promise((resolve, reject) => {
-        const dest = fs.createWriteStream(
-          `./files/${folder.name}/${file.name}`
-        );
-        let progress = 0;
-        res.data
-          .on("end", () => {
-            console.log(`done downloading ${file.name}`);
-            resolve(`./files/${file.name}`);
-          })
-          .on("error", () => {
-            console.log(`error downloading ${file.name}`);
-          })
-          .pipe(dest);
+const writeFileFromDriveToDisk = (file, folder) => {
+  return mkdir(`./files/${folder.name}/`, { recursive: true }).then(() => {
+    return drive.files
+      .get({ fileId: file.id, alt: "media" }, { responseType: "stream" })
+      .then((res) => {
+        return new Promise((resolve, reject) => {
+          const dest = fs.createWriteStream(
+            `./files/${folder.name}/${file.name}`
+          );
+          let progress = 0;
+          res.data
+            .on("end", () => {
+              console.log(`Downloaded in ${folder.name} - ${file.name}`);
+              resolve(`./files/${file.name}`);
+            })
+            .on("error", () => {
+              console.log(`error downloading ${file.name}`);
+              reject(`error downloadingg ${file.name}`);
+            })
+            .pipe(dest);
+        });
       });
-    });
+  });
+};
+
+exports.saveFilesFromGoogleDriveToDisk = (arrayOfFolderAndFiles) => {
+  return arrayOfFolderAndFiles.map(({ folder, files }) => {
+    return Promise.all(
+      files.map((file) => writeFileFromDriveToDisk(file, folder))
+    );
+  });
 };

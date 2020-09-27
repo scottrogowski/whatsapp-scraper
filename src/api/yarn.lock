@@ -2957,6 +2957,11 @@ crypto-browserify@^3.11.0:
     randombytes "^2.0.0"
     randomfill "^1.0.3"
 
+crypto-js@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/crypto-js/-/crypto-js-4.0.0.tgz#2904ab2677a9d042856a2ea2ef80de92e4a36dcc"
+  integrity sha512-bzHZN8Pn+gS7DQA6n+iUmBfl0hO5DJq++QP3U6uTucDtk/0iGpXd/Gg7CGR0p8tJhofJyaKoWBuJI4eAO00BBg==
+
 css-color-keywords@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/css-color-keywords/-/css-color-keywords-1.0.0.tgz#fea2616dc676b2962686b3af8dbdbe180b244e05"
@@ -8379,6 +8384,13 @@ simple-concat@^1.0.0:
   resolved "https://registry.yarnpkg.com/simple-concat/-/simple-concat-1.0.1.tgz#f46976082ba35c2263f1c8ab5edfe26c41c9552f"
   integrity sha512-cSFtAPtRhljv69IK0hTVZQ+OfE9nePi/rtJmw5UjHeVyVroEqJXP1sFztKUy1qU+xvz3u/sfYJLa947b7nAN2Q==
 
+simple-crypto-js@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/simple-crypto-js/-/simple-crypto-js-3.0.0.tgz#31ae53c291f1ca819d2c5f9fcdb2125ea0614713"
+  integrity sha512-5eSn5RTK+05iHFCkeCzhDuZY5Ek/rpws4k7oEpB7e3YxMBnJAEm/sN1FbWn/duiZgnIsDSuyti5pQr9oq12pyg==
+  dependencies:
+    crypto-js "^4.0.0"
+
 simple-get@^3.0.3:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/simple-get/-/simple-get-3.1.0.tgz#b45be062435e50d159540b576202ceec40b9c6b3"
@@ -9939,6 +9951,11 @@ websocket-extensions@>=0.1.1:
   version "0.1.4"
   resolved "https://registry.yarnpkg.com/websocket-extensions/-/websocket-extensions-0.1.4.tgz#7f8473bc839dfd87608adb95d7eb075211578a42"
   integrity sha512-OqedPIGOfsDlo31UNwYbCFMSaO9m9G/0faIHj5/dZFDMFqPTcx6UwqyOy3COEaEOg/9VsGIpdqn62W5KhoKSpg==
+
+whatsapp-chat-parser@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/whatsapp-chat-parser/-/whatsapp-chat-parser-3.0.2.tgz#079738cceaf36027c4c05c14c1000b119bd7dee9"
+  integrity sha512-JqP/9eQISqbwzQL1pb0ReQ/Q0AE6fOjkM2txnc7H3QuSJO4zKRG2tRUyUV0drWhUedbACwh6GY8S9UQXbPcHwA==
 
 whatwg-fetch@^3.3.1:
   version "3.4.1"

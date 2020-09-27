@@ -1,57 +1,33 @@
 const {
-  getFolderByName,
-  getFilesInThisFolder,
+  getFolderFromDriveByName,
   getFoldersInThisFolder,
   modifyLastUpdatedTimeInRecord,
-  hasFolderContentChangedSinceLastTime,
-  writeFileFromDriveToDisk,
+  getModifiedFoldersSinceLastScrapeTime,
+  getFilesInTheseFolders,
+  saveFilesFromGoogleDriveToDisk,
+  parseWhatsappChatTextFileIntoJson,
 } = require("./gdrive");
 const { DateTime } = require("luxon");
-const record = require("./record.json");
 
-let scrapedWhatsappGroups;
+let changedWhatsappGroups;
+let report;
 
-getFolderByName("Whatsapp-Scraper")
-  .then((whatsappScraperFolder) =>
-    getFoldersInThisFolder(whatsappScraperFolder)
-  )
-  .then((whatsappGroups) => {
-    scrapedWhatsappGroups = whatsappGroups;
-    return whatsappGroups.filter((whatsappGroup) => {
-      const lastModifiedTimeOfThisFolderInRecord = record[whatsappGroup.id]
-        ? record[whatsappGroup.id]["modifiedTime"]
-        : null;
-      return hasFolderContentChangedSinceLastTime(
-        whatsappGroup,
-        lastModifiedTimeOfThisFolderInRecord
-      );
-    });
+getFolderFromDriveByName("Whatsapp-Scraper")
+  .then(getFoldersInThisFolder)
+  .then(getModifiedFoldersSinceLastScrapeTime)
+  .then((modifiedWhatsappGroups) => {
+    console.log(
+      `Modified Folders : ${modifiedWhatsappGroups
+        .map((group) => group.name)
+        .join(", ")}`
+    );
+    changedWhatsappGroups = modifiedWhatsappGroups;
+    return getFilesInTheseFolders(modifiedWhatsappGroups);
   })
-  .then((modifiedWhatsappGroups) =>
-    Promise.all(
-      modifiedWhatsappGroups.map((whatsappGroup) => {
-        return getFilesInThisFolder(whatsappGroup);
-      })
-    )
-  )
-  .then((arrayOfFolderAndFiles) => {
-    arrayOfFolderAndFiles.map(({ folder, files }) => {
-      console.log({ folder, files });
-      files.map((file) => writeFileFromDriveToDisk(file, folder));
-    });
-  })
-  .then(() => modifyLastUpdatedTimeInRecord(scrapedWhatsappGroups))
+  .then(saveFilesFromGoogleDriveToDisk)
+  .then((downloadAllFiles) => Promise.all(downloadAllFiles))
+  .then(() => parseWhatsappChatTextFileIntoJson(changedWhatsappGroups))
+  .then(() => modifyLastUpdatedTimeInRecord(changedWhatsappGroups))
+  .then((res) => console.log("res", res))
   .then((res) => console.log("done"))
   .catch((err) => console.log(err));
-
-// let time1 = "2020-09-24T16:57:12.936Z";
-// let time2 = "2020-09-24T16:56:39.227Z";
-// let time3 = "2020-09-23T08:54:59.009Z";
-//
-// datetime1 = DateTime.fromISO(time1);
-// datetime2 = DateTime.fromISO(time2);
-// datetime3 = DateTime.fromISO(time3);
-//
-// console.log(datetime1 < datetime2);
-// console.log(datetime1 > datetime3);
-//
